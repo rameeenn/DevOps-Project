@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../components/AuthContext';
 import LoginPage from '../components/LoginPage';
@@ -26,8 +27,10 @@ afterAll(() => {
   console.log = originalConsoleLog;
 });
 
-describe('Real LoginPage with Actual AuthContext', () => {
+describe('LoginPage with AuthContext Integration Tests', () => {
+  let user;
   beforeEach(() => {
+    user = userEvent.setup();
     fetch.mockClear();
     // Clear sessionStorage before each test
     sessionStorage.clear();
@@ -70,14 +73,10 @@ describe('Real LoginPage with Actual AuthContext', () => {
     );
 
     // Fill and submit form
-    fireEvent.change(screen.getByPlaceholderText(/email/i), {
-      target: { value: 'test@test.com' }
-    });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
-      target: { value: 'password123' }
-    });
+    await user.type(screen.getByPlaceholderText(/email/i), 'test@test.com');
+    await user.type(screen.getByPlaceholderText(/password/i), 'password123');
 
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     // Verify API call
     await waitFor(() => {
@@ -107,17 +106,13 @@ describe('Real LoginPage with Actual AuthContext', () => {
       </BrowserRouter>
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/email/i), {
-      target: { value: 'wrong@test.com' }
-    });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
-      target: { value: 'wrongpass' }
-    });
+    await user.type(screen.getByPlaceholderText(/email/i), 'wrong@test.com');
+    await user.type(screen.getByPlaceholderText(/password/i), 'wrongpass');
 
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalled();
+      expect(fetch).toHaveBeenCalledTimes(1);
     });
   });
 });

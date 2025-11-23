@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../components/AuthContext';
 import DoctorLogin from '../components/DoctorLogin';
@@ -23,7 +24,7 @@ const localStorageMock = {
 };
 global.localStorage = localStorageMock;
 
-describe('Real DoctorLogin Component', () => {
+describe('DoctorLogin Component Integration Tests', () => {
   beforeEach(() => {
     fetch.mockClear();
     mockNavigate.mockClear();
@@ -45,7 +46,8 @@ describe('Real DoctorLogin Component', () => {
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
-  test('handles form input changes', () => {
+  test('handles form input changes', async () => {
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <AuthProvider>
@@ -57,14 +59,15 @@ describe('Real DoctorLogin Component', () => {
     const emailInput = screen.getByPlaceholderText(/email/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
 
-    fireEvent.change(emailInput, { target: { value: 'doctor@test.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'doctor123' } });
+    await user.type(emailInput, 'doctor@test.com');
+    await user.type(passwordInput, 'doctor123');
 
-    expect(emailInput.value).toBe('doctor@test.com');
-    expect(passwordInput.value).toBe('doctor123');
+    expect(emailInput).toHaveValue('doctor@test.com');
+    expect(passwordInput).toHaveValue('doctor123');
   });
 
-  test('successful doctor login', async () => {
+  test('successful doctor login updates storage and navigates', async () => {
+    const user = userEvent.setup();
     const mockDoctor = {
       doctor_id: 'D123',
       full_name: 'Dr. John Smith',
@@ -87,15 +90,11 @@ describe('Real DoctorLogin Component', () => {
     );
 
     // Fill out the form
-    fireEvent.change(screen.getByPlaceholderText(/email/i), {
-      target: { value: 'doctor@test.com' }
-    });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
-      target: { value: 'doctor123' }
-    });
+    await user.type(screen.getByPlaceholderText(/email/i), 'doctor@test.com');
+    await user.type(screen.getByPlaceholderText(/password/i), 'doctor123');
 
     // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     // Verify API call
     await waitFor(() => {
@@ -124,6 +123,7 @@ describe('Real DoctorLogin Component', () => {
   });
 
   test('failed doctor login shows alert', async () => {
+    const user = userEvent.setup();
     // Mock failed API response
     fetch.mockResolvedValueOnce({
       ok: false,
@@ -141,19 +141,13 @@ describe('Real DoctorLogin Component', () => {
       </BrowserRouter>
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/email/i), {
-      target: { value: 'wrong@test.com' }
-    });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
-      target: { value: 'wrongpass' }
-    });
+    await user.type(screen.getByPlaceholderText(/email/i), 'wrong@test.com');
+    await user.type(screen.getByPlaceholderText(/password/i), 'wrongpass');
 
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
       expect(global.alert).toHaveBeenCalledWith('Invalid credentials');
     });
   });
-
-
 });

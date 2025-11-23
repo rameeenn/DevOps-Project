@@ -1,6 +1,7 @@
 // src/__tests__/DoctorAll.test.jsx
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../components/AuthContext';
 import Consultation from '../components/Consultation';
@@ -49,7 +50,9 @@ afterAll(() => {
 });
 
 describe('Doctor Components - Integration Tests', () => {
+  let user;
   beforeEach(() => {
+    user = userEvent.setup();
     jest.clearAllMocks();
     fetch.mockReset();
     mockNavigate.mockReset();
@@ -83,19 +86,19 @@ describe('Doctor Components - Integration Tests', () => {
 
     // Click the Select button instead of the patient name
     const selectButtons = screen.getAllByRole('button', { name: /Select/i });
-    fireEvent.click(selectButtons[0]);
+    await user.click(selectButtons[0]);
     
     // Check for consultation section (it shows "Consultation with John Doe")
     await waitFor(() => expect(screen.getByText(/Consultation with John Doe/i)).toBeInTheDocument());
 
     // Fill prescription
-    fireEvent.change(screen.getByPlaceholderText('Medicine'), { target: { value: 'Paracetamol' } });
-    fireEvent.change(screen.getByPlaceholderText('Dosage'), { target: { value: '500mg' } });
-    fireEvent.change(screen.getByPlaceholderText('Duration'), { target: { value: '5 days' } });
-    fireEvent.change(screen.getByPlaceholderText('Diagnosis'), { target: { value: 'Viral Fever' } });
+    await user.type(screen.getByPlaceholderText('Medicine'), 'Paracetamol');
+    await user.type(screen.getByPlaceholderText('Dosage'), '500mg');
+    await user.type(screen.getByPlaceholderText('Duration'), '5 days');
+    await user.type(screen.getByPlaceholderText('Diagnosis'), 'Viral Fever');
 
     fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Prescription saved' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Save Prescription' }));
+    await user.click(screen.getByRole('button', { name: 'Save Prescription' }));
 
     await waitFor(() => 
       expect(fetch).toHaveBeenCalledWith(
@@ -126,19 +129,19 @@ describe('Doctor Components - Integration Tests', () => {
 
     await waitFor(() => expect(screen.getByText('P001')).toBeInTheDocument());
 
-    fireEvent.change(screen.getByPlaceholderText(/Search patients by id/i), { target: { value: 'P001' } });
+    await user.type(screen.getByPlaceholderText(/Search patients by id/i), 'P001');
 
     const rescheduleButtons = screen.getAllByRole('button', { name: 'Reschedule' });
-    fireEvent.click(rescheduleButtons[0]);
+    await user.click(rescheduleButtons[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/doctor/patients', expect.any(Object));
 
     const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
-    fireEvent.click(cancelButtons[0]);
+    await user.click(cancelButtons[0]);
     
     await waitFor(() => expect(screen.getByText('Cancel Appointment')).toBeInTheDocument());
     
     fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Appointment cancelled' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Yes, Cancel' }));
 
     await waitFor(() => 
       expect(fetch).toHaveBeenCalledWith(
@@ -198,16 +201,16 @@ describe('Doctor Components - Integration Tests', () => {
     await waitFor(() => expect(screen.getByText('P002')).toBeInTheDocument());
 
     const rescheduleButtons = screen.getAllByRole('button', { name: 'Reschedule' });
-    fireEvent.click(rescheduleButtons[0]);
+    await user.click(rescheduleButtons[0]);
     expect(mockNavigate).toHaveBeenCalled();
 
     const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
-    fireEvent.click(cancelButtons[0]);
+    await user.click(cancelButtons[0]);
     
     await waitFor(() => expect(screen.getByText('Confirm Cancelation')).toBeInTheDocument());
     
     fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Appointment cancelled' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Yes, Cancel' }));
 
     await waitFor(() => 
       expect(fetch).toHaveBeenCalledWith(
@@ -252,18 +255,18 @@ describe('Doctor Components - Integration Tests', () => {
     await waitFor(() => expect(screen.getByText('Alice Brown')).toBeInTheDocument());
 
     const viewHistoryButtons = screen.getAllByRole('button', { name: /View History/i });
-    fireEvent.click(viewHistoryButtons[0]);
+    await user.click(viewHistoryButtons[0]);
     
     await waitFor(() => expect(screen.getByText('Patient History')).toBeInTheDocument());
 
     // Close the history modal and test edit
     const closeButtons = screen.getAllByRole('button', { name: '×' });
     if (closeButtons.length > 0) {
-      fireEvent.click(closeButtons[0]);
+      await user.click(closeButtons[0]);
     }
 
     const editButtons = screen.getAllByRole('button', { name: /Edit Info/i });
-    fireEvent.click(editButtons[0]);
+    await user.click(editButtons[0]);
     
     // The EditPatient component might show different text, adjust as needed
     await waitFor(() => {

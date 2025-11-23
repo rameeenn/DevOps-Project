@@ -1,6 +1,7 @@
 // src/__tests__/AdminAll.test.jsx
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../components/AuthContext'; // Adjust path if needed
 import AdminHeader from '../components/AdminHeader';
@@ -53,8 +54,10 @@ afterAll(() => {
   console.log.mockRestore();
 });
 
-describe('Admin Components - Full Coverage', () => {
+describe('Admin Components - Integration Tests', () => {
+  let user;
   beforeEach(() => {
+    user = userEvent.setup();
     fetch.mockClear();
     mockNavigate.mockClear();
     mockLogout.mockClear();
@@ -81,7 +84,7 @@ describe('Admin Components - Full Coverage', () => {
     expect(screen.getByRole('link', { name: /update stock/i })).toBeInTheDocument();
   });
 
-  test('toggles popup on profile icon click', () => {
+  test('toggles popup on profile icon click', async () => {
     const { container } = render(
       <BrowserRouter>
         <AuthProvider>
@@ -91,15 +94,15 @@ describe('Admin Components - Full Coverage', () => {
     );
 
     const profileIcon = container.querySelector('svg');
-    fireEvent.click(profileIcon);
+    await user.click(profileIcon);
     expect(screen.getByText('View Profile')).toBeInTheDocument();
     expect(screen.getByText('Logout')).toBeInTheDocument();
 
-    fireEvent.click(profileIcon); // Toggle off
+    await user.click(profileIcon); // Toggle off
     expect(screen.queryByText('View Profile')).not.toBeInTheDocument();
   });
 
-  test('handles logout', () => {
+  test('handles logout', async () => {
     const { container } = render(
       <BrowserRouter>
         <AuthProvider>
@@ -109,8 +112,8 @@ describe('Admin Components - Full Coverage', () => {
     );
 
     const profileIcon = container.querySelector('svg');
-    fireEvent.click(profileIcon);
-    fireEvent.click(screen.getByText('Logout'));
+    await user.click(profileIcon);
+    await user.click(screen.getByText('Logout'));
 
     expect(mockLogout).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -136,7 +139,7 @@ describe('Admin Components - Full Coverage', () => {
     expect(screen.getByRole('button', { name: 'Manage Stock' })).toBeInTheDocument();
   });
 
-  test('navigates to manage users on button click', () => {
+  test('navigates to manage users on button click', async () => {
     render(
       <BrowserRouter>
         <AuthProvider>
@@ -145,11 +148,11 @@ describe('Admin Components - Full Coverage', () => {
       </BrowserRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage Users' }));
+    await user.click(screen.getByRole('button', { name: 'Manage Users' }));
     expect(mockNavigate).toHaveBeenCalledWith('/manage-users');
   });
 
-  test('navigates to manage stock on button click', () => {
+  test('navigates to manage stock on button click', async () => {
     render(
       <BrowserRouter>
         <AuthProvider>
@@ -158,7 +161,7 @@ describe('Admin Components - Full Coverage', () => {
       </BrowserRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage Stock' }));
+    await user.click(screen.getByRole('button', { name: 'Manage Stock' }));
     expect(mockNavigate).toHaveBeenCalledWith('/manage-stock');
   });
 
@@ -188,24 +191,24 @@ describe('Admin Components - Full Coverage', () => {
     });
 
     // Stock increase
-    fireEvent.click(screen.getAllByRole('button', { name: /Restock \+10/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /Restock \+10/i })[0]);
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/stock'), expect.objectContaining({ method: 'PUT' })));
 
     // Delete
-    fireEvent.click(screen.getAllByRole('button', { name: /Delete/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /Delete/i })[0]);
     expect(screen.getByText('Are you sure you want to delete this medicine?')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Yes, Delete' }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/medicines/'), expect.objectContaining({ method: 'DELETE' })));
 
     // Add medicine
-    fireEvent.change(screen.getByPlaceholderText('Medicine Name'), { target: { value: 'New Med' } });
-    fireEvent.change(screen.getByPlaceholderText('Category'), { target: { value: 'New Cat' } });
-    fireEvent.change(screen.getByPlaceholderText('Description'), { target: { value: 'New Desc' } });
-    fireEvent.change(screen.getByPlaceholderText('Stock (e.g., 50)'), { target: { value: 100 } });
-    fireEvent.change(screen.getByPlaceholderText('Price (e.g., 20)'), { target: { value: 25 } });
-    fireEvent.change(screen.getByPlaceholderText('Expiry Date'), { target: { value: '2025-12-31' } }); // Assuming it's a text input for date
+    await user.type(screen.getByPlaceholderText('Medicine Name'), 'New Med');
+    await user.type(screen.getByPlaceholderText('Category'), 'New Cat');
+    await user.type(screen.getByPlaceholderText('Description'), 'New Desc');
+    await user.type(screen.getByPlaceholderText('Stock (e.g., 50)'), '100');
+    await user.type(screen.getByPlaceholderText('Price (e.g., 20)'), '25');
+    await user.type(screen.getByPlaceholderText('Expiry Date'), '2025-12-31'); // Assuming it's a text input for date
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add Medicine' }));
+    await user.click(screen.getByRole('button', { name: 'Add Medicine' }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/medicinesadd'), expect.objectContaining({ method: 'POST' })));
   });
 
@@ -233,13 +236,13 @@ describe('Admin Components - Full Coverage', () => {
     });
 
     // Edit
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/edit-user/1');
 
     // Delete
-    fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
     expect(screen.getByText('Delete User')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Yes, Delete' }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/users/'), expect.objectContaining({ method: 'DELETE' })));
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Deleted user with ID:'));
   });

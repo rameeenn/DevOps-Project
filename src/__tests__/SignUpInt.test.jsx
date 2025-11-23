@@ -1,6 +1,7 @@
-// src/__tests__/SignUp.test.jsx
+// src/__tests__/SignUpInt.test.jsx
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import SignUpPage from '../components/SignUpPage'; // Adjust path if needed
 
@@ -14,8 +15,10 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-describe('SignUpPage Component', () => {
+describe('SignUpPage Component Integration Tests', () => {
+  let user;
   beforeEach(() => {
+    user = userEvent.setup();
     fetch.mockClear();
     mockNavigate.mockClear();
     global.alert = jest.fn();
@@ -38,7 +41,7 @@ describe('SignUpPage Component', () => {
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
   });
 
-  test('handles form input changes', () => {
+  test('handles form input changes', async () => {
     render(<BrowserRouter><SignUpPage /></BrowserRouter>);
 
     const allInputs = screen.getAllByDisplayValue('');
@@ -50,29 +53,29 @@ describe('SignUpPage Component', () => {
     const passwordInput = allInputs[4];
     const confirmPasswordInput = allInputs[5];
 
-    fireEvent.change(fullNameInput, { target: { value: 'John Doe' } });
-    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(contactInput, { target: { value: '1234567890' } });
-    fireEvent.change(passwordInput, { target: { value: 'secret123' } });
-    fireEvent.change(confirmPasswordInput, { target: { value: 'secret123' } });
+    await user.type(fullNameInput, 'John Doe');
+    await user.type(emailInput, 'john@example.com');
+    await user.type(contactInput, '1234567890');
+    await user.type(passwordInput, 'secret123');
+    await user.type(confirmPasswordInput, 'secret123');
 
-    expect(fullNameInput.value).toBe('John Doe');
-    expect(emailInput.value).toBe('john@example.com');
-    expect(contactInput.value).toBe('1234567890');
-    expect(passwordInput.value).toBe('secret123');
-    expect(confirmPasswordInput.value).toBe('secret123');
+    expect(fullNameInput).toHaveValue('John Doe');
+    expect(emailInput).toHaveValue('john@example.com');
+    expect(contactInput).toHaveValue('1234567890');
+    expect(passwordInput).toHaveValue('secret123');
+    expect(confirmPasswordInput).toHaveValue('secret123');
   });
 
-  test('shows alert when passwords do not match', () => {
+  test('shows alert when passwords do not match', async () => {
     render(<BrowserRouter><SignUpPage /></BrowserRouter>);
 
     const allInputs = screen.getAllByDisplayValue('');
     const passwordInputs = allInputs.slice(-2); // Last two are passwords
 
-    fireEvent.change(passwordInputs[0], { target: { value: 'pass123' } });
-    fireEvent.change(passwordInputs[1], { target: { value: 'different' } });
+    await user.type(passwordInputs[0], 'pass123');
+    await user.type(passwordInputs[1], 'different');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }));
+    await user.click(screen.getByRole('button', { name: 'Sign Up' }));
 
     expect(global.alert).toHaveBeenCalledWith('Passwords do not match');
     expect(fetch).not.toHaveBeenCalled();
@@ -88,14 +91,14 @@ describe('SignUpPage Component', () => {
 
     const allInputs = screen.getAllByDisplayValue('');
 
-    fireEvent.change(allInputs[0], { target: { value: 'John Doe' } });
-    fireEvent.change(allInputs[1], { target: { value: 'john@test.com' } });
-    fireEvent.change(allInputs[2], { target: { value: '1990-01-01' } }); // dob
-    fireEvent.change(allInputs[3], { target: { value: '1234567890' } });
-    fireEvent.change(allInputs[4], { target: { value: 'pass123' } });
-    fireEvent.change(allInputs[5], { target: { value: 'pass123' } });
+    await user.type(allInputs[0], 'John Doe');
+    await user.type(allInputs[1], 'john@test.com');
+    await user.type(allInputs[2], '1990-01-01'); // dob
+    await user.type(allInputs[3], '1234567890');
+    await user.type(allInputs[4], 'pass123');
+    await user.type(allInputs[5], 'pass123');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }));
+    await user.click(screen.getByRole('button', { name: 'Sign Up' }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     expect(global.alert).toHaveBeenCalledWith('User registered successfully');
@@ -112,21 +115,21 @@ describe('SignUpPage Component', () => {
 
     const allInputs = screen.getAllByDisplayValue('');
 
-    fireEvent.change(allInputs[0], { target: { value: 'John' } });
-    fireEvent.change(allInputs[1], { target: { value: 'j@j.com' } });
-    fireEvent.change(allInputs[2], { target: { value: '1990-01-01' } }); // dob
-    fireEvent.change(allInputs[3], { target: { value: '1234567890' } });
-    fireEvent.change(allInputs[4], { target: { value: 'pass123' } });
-    fireEvent.change(allInputs[5], { target: { value: 'pass123' } });
+    await user.type(allInputs[0], 'John');
+    await user.type(allInputs[1], 'j@j.com');
+    await user.type(allInputs[2], '1990-01-01'); // dob
+    await user.type(allInputs[3], '1234567890');
+    await user.type(allInputs[4], 'pass123');
+    await user.type(allInputs[5], 'pass123');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }));
+    await user.click(screen.getByRole('button', { name: 'Sign Up' }));
 
     await waitFor(() => expect(global.alert).toHaveBeenCalledWith('Error during signup'));
   });
 
-  test('navigates to login page when login button is clicked', () => {
+  test('navigates to login page when login button is clicked', async () => {
     render(<BrowserRouter><SignUpPage /></BrowserRouter>);
-    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+    await user.click(screen.getByRole('button', { name: 'Login' }));
     expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
 });
