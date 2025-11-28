@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI 
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
 
       - name: Build and start containers
         run: |
-          docker-compose -f docker-compose.yml up -d --build mysql backend frontend
+          docker compose -f docker-compose.yml up -d --build mysql backend frontend
 
       - name: Wait for backend to be ready
         run: |
@@ -53,4 +53,4 @@ jobs:
           docker exec frontend_app npm test -- --watchAll=false --coverage
 
       - name: Shutdown containers
-        run: docker-compose -f docker-compose.yml down
+        run: docker compose -f docker compose.yml down
