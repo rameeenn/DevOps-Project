@@ -40,7 +40,7 @@ mysql.createConnection({
         console.log("Connected to MySQL database!");
     })
     .catch((err) => {
-        console.error("Error connecting to MySQL - :", err);
+        console.error("Error connecting to MySQL:", err);
     });
 
 const app = express();
