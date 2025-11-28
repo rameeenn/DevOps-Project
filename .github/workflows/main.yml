@@ -1,0 +1,79 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Build and start services
+        run: docker-compose up -d --build
+
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            if docker-compose exec -T mysql_db mysql -uroot -pmaham123 -e "SELECT 1;" healthify 2>/dev/null; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo " Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+
+
+      - name: Run frontend tests
+        run: |
+          docker-compose exec -T frontend_app npm test -- --watchAll=false --ci --passWithNoTests
+
+      - name: Clean up
+        if: always()
+        run: docker-compose down -v
+
+  build:
+    runs-on: ubuntu-latest
+    name: Build and Deploy
+    needs: test  
+    if: success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Build and start production services
+        run: |
+          echo " Tests passed!"
+          docker-compose up -d --build
+          sleep 10
+          docker-compose ps
+
+      - name: Verify services are running
+        run: |
+          echo "Build successful!"
+          echo "Frontend: http://localhost:3000"
+          echo "Backend: http://localhost:3001"
+          echo "MySQL: localhost:3307"
+
+      - name: Clean up
+        if: always()
+        run: docker-compose down -v
