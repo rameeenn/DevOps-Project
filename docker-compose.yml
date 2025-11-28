@@ -9,7 +9,12 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d  
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmaham123"]
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   backend:
     build: ./backend
@@ -22,7 +27,13 @@ services:
       DB_PASSWORD: maham123
       DB_NAME: healthify
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   frontend:
     build: ./frontend
@@ -30,7 +41,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   mysql_data:
