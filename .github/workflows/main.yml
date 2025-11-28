@@ -20,18 +20,18 @@ jobs:
       - name: Set up Docker Compose
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-compose netcat
+          sudo apt-get install -y docker-compose netcat-openbsd
 
       - name: Build services
         run: docker-compose build
 
       - name: Start MySQL only first
         run: |
-          docker-compose up -d mysql_db
+          docker-compose up -d mysql
           echo "Waiting for MySQL to be ready..."
-          # Wait specifically for MySQL
+          # Use mysqladmin instead of netcat
           for i in {1..60}; do
-            if docker-compose exec mysql_db mysql -uroot -pmaham123 -e "SELECT 1;" healthify 2>/dev/null; then
+            if docker-compose exec mysql_db mysqladmin ping -uroot -pmaham123 --silent 2>/dev/null; then
               echo "✅ MySQL is ready!"
               break
             fi
@@ -43,7 +43,7 @@ jobs:
         run: |
           docker-compose up -d backend_app
           echo "Waiting for backend to be ready..."
-          # Wait for backend
+          # Use curl to check backend
           for i in {1..30}; do
             if curl -f http://localhost:3001/ 2>/dev/null || curl -f http://localhost:3001/health 2>/dev/null; then
               echo "✅ Backend is ready!"
@@ -91,10 +91,8 @@ jobs:
       - name: Build and start services
         run: |
           docker-compose up -d --build
-          # Give more time for startup
           sleep 45
           docker-compose ps
-          docker-compose logs
 
       - name: Verify deployment
         run: |
