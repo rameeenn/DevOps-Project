@@ -47,7 +47,6 @@ function App() {
   return (
     <div>
       <AuthProvider>
-        <Router>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
@@ -238,7 +237,6 @@ function App() {
             />
 
           </Routes>
-        </Router>
       </AuthProvider>
     </div>
   );
