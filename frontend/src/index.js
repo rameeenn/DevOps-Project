@@ -3,11 +3,19 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { BrowserRouter } from 'react-router-dom';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,    // Opt-in for v7 startTransition behavior
+        v7_relativeSplatPath: true,  // Opt-in for v7 relative Splat path behavior
+      }}
+    >
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
 
