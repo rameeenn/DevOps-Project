@@ -50,6 +50,10 @@ const port = 3001;
 app.use(bodyParser.json());
 app.use(cors());
 
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
+
 app.get("/appointments/:id", async (req, res) => {
     try {
         const userId = req.params.id;
