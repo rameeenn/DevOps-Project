@@ -20,7 +20,7 @@ async function connectWithRetry() {
       console.log("Connected to MySQL!");
       connected = true;
     } catch (err) {
-      console.log("MySQL not ready");
+      console.log("MySQL not ready !");
       await new Promise(res => setTimeout(res, 5000));
     }
   }
