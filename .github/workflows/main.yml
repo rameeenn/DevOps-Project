@@ -96,16 +96,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Check if frontend changed
-        id: frontend-check
-        run: |
-          # Check if any files in frontend folder changed
-          echo "CHANGED=$(git diff --name-only ${{ github.sha }} ${{ github.event.before }} | grep '^frontend/' || true)" >> $GITHUB_ENV
-          echo "Changed files: $CHANGED"
-          if [ -z "$CHANGED" ]; then
-            echo "No frontend changes detected."
-            exit 78  # Skip deployment job
-
       - name: Deploy frontend to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
