@@ -11,7 +11,7 @@ const HomePage = () => {
       <section style={styles.imageSection}>
         <div style={styles.textOverlay}>
           <h1 style={styles.largetextblue}>Among the</h1>
-          <h1 style={styles.largeText}>nations</h1>
+          <h1 style={styles.largeText}>nation's</h1>
           <h1 style={styles.largeText}>best</h1>
           <button
             style={styles.button}
