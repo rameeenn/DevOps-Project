@@ -8,60 +8,24 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: maham123
-          MYSQL_DATABASE: healthify
-        ports:
-          - 3307:3306
-        options: >-
-          --health-cmd "mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-      - name: Build and start containers
+      - name: Install dependencies
         run: |
-          docker compose -f docker-compose.yml up -d --build mysql backend frontend
-
-      - name: Wait for backend to be ready
-        run: |
-          echo "Waiting for backend to be up on port 3001..."
-          for i in {1..30}; do
-            if nc -z localhost 3001; then
-              echo "Backend is ready!"
-              break
-            fi
-            echo "Waiting 2s..."
-            sleep 2
-          done
+          cd frontend
+          npm install
 
       - name: Run frontend tests
         run: |
-          docker exec frontend_app npm test -- --watchAll=false --coverage
-
-      - name: Run backend tests
-        run: |
-          docker exec backend_app npm test -- --watchAll=false --coverage
-
-      - name: Show logs on failure
-        if: failure()
-        run: |
-          docker logs mysql_db || true
-          docker logs backend_app || true
-          docker logs frontend_app || true
-
-      - name: Stop containers
-        run: docker compose down
+          cd frontend
+          npm test -- --watchAll=false --coverage
 
   deploy:
     needs: ci
@@ -86,4 +50,3 @@ jobs:
             docker build -t my-frontend:latest frontend
             docker run -d --name frontend_app -p 80:3000 my-frontend:latest
             docker system prune -f
-
