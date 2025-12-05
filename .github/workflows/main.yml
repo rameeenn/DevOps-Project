@@ -95,13 +95,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+  
+      - name: Write SSH key to file
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > ec2_key.pem
+          chmod 600 ec2_key.pem
+  
       - name: Deploy frontend to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
+          username: ubuntu
+          key_path: ./ec2_key.pem
           port: 22
           script: |
             cd ${{ secrets.EC2_PATH }}
@@ -110,3 +115,4 @@ jobs:
             docker build -t my-frontend:latest frontend
             docker run -d --name frontend_app -p 80:3000 my-frontend:latest
             docker system prune -f
+  
