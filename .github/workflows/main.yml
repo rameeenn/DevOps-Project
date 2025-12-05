@@ -86,7 +86,7 @@ jobs:
           tag_prefix: "v"
 
   # --------------------
-  # Frontend Deployment to EC2
+  # Frontend Deployment to EC2 (using rsync + ssh)
   # --------------------
   deploy-frontend:
     needs: ci
@@ -96,19 +96,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Write SSH key to file
+      - name: Copy project to EC2
         run: |
           echo "${{ secrets.EC2_KEY }}" | tr -d '\r' > ec2_key.pem
           chmod 600 ec2_key.pem
+          rsync -avz -e "ssh -i ec2_key.pem -o StrictHostKeyChecking=no" ./ ubuntu@${{ secrets.EC2_HOST }}:${{ secrets.EC2_PATH }}
 
-      - name: Deploy frontend to EC2 via SSH
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key_path: ./ec2_key.pem
-          port: 22
-          script: |
+      - name: Run remote commands on EC2
+        run: |
+          ssh -i ec2_key.pem -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd ${{ secrets.EC2_PATH }}
             git pull
             docker rm -f frontend_app || true
