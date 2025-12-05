@@ -29,7 +29,7 @@ const AdminHeader = ({ isLoggedIn }) => {
 
       <nav style={styles.nav}>
         <Link to="/a" style={styles.link}>Home</Link>
-        <Link to="/manage-users" style={styles.link}>Manage All Users</Link>
+        <Link to="/manage-users" style={styles.link}>Manage Users</Link>
         <Link to="/manage-stock" style={styles.link}>Update Stock</Link>
         <div style={styles.profileIconContainer} onClick={togglePopup}>
           <FaUserCircle size={24} style={styles.icon} />
