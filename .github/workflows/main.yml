@@ -3,40 +3,110 @@ name: CI-CD
 on:
   push:
     branches: ["main"]
+  pull_request:
 
 jobs:
+  # --------------------
+  # Continuous Integration
+  # --------------------
   ci:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: maham123
+          MYSQL_DATABASE: healthify
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Install dependencies
+      - name: Build and start containers
         run: |
-          cd frontend
-          npm install
+          docker compose -f docker-compose.yml up -d --build mysql backend frontend
+
+      - name: Wait for backend to be ready
+        run: |
+          echo "Waiting for backend to be up on port 3001..."
+          for i in {1..30}; do
+            if nc -z localhost 3001; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Waiting 2s..."
+            sleep 2
+          done
 
       - name: Run frontend tests
         run: |
-          cd frontend
-          npm test -- --watchAll=false --coverage
+          docker exec frontend_app npm test -- --watchAll=false
 
-  deploy:
+      - name: Run backend tests
+        run: |
+          docker exec backend_app npm test -- --watchAll=false
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker logs mysql_db || true
+          docker logs backend_app || true
+          docker logs frontend_app || true
+
+      - name: Shutdown containers
+        run: docker compose down
+
+  # --------------------
+  # Release Tagging
+  # --------------------
+  release:
     needs: ci
     runs-on: ubuntu-latest
     if: success()
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy to EC2 via SSH
+      - name: Create automatic tag and release
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_branches: main
+          default_bump: patch
+          tag_prefix: "v"
+
+  # --------------------
+  # Frontend Deployment to EC2
+  # --------------------
+  deploy-frontend:
+    needs: ci
+    runs-on: ubuntu-latest
+    if: success() && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check if frontend changed
+        id: frontend-check
+        run: |
+          # Check if any files in frontend folder changed
+          echo "CHANGED=$(git diff --name-only ${{ github.sha }} ${{ github.event.before }} | grep '^frontend/' || true)" >> $GITHUB_ENV
+          echo "Changed files: $CHANGED"
+          if [ -z "$CHANGED" ]; then
+            echo "No frontend changes detected."
+            exit 78  # Skip deployment job
+
+      - name: Deploy frontend to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
