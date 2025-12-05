@@ -113,5 +113,5 @@ jobs:
             git pull
             docker rm -f frontend_app || true
             docker build -t my-frontend:latest frontend
-            docker run -d --name frontend_app -p 80:3000 my-frontend:latest
+            docker run -d --name frontend_app -p 3000:3000 my-frontend:latest
             docker system prune -f
