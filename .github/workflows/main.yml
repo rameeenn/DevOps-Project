@@ -1,14 +1,13 @@
-name: CI 
+name: CI-CD
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    branches: ["main"]
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:8
@@ -18,9 +17,9 @@ jobs:
         ports:
           - 3307:3306
         options: >-
-          --health-cmd "mysqladmin ping -h localhost" 
-          --health-interval=10s 
-          --health-timeout=5s 
+          --health-cmd "mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
           --health-retries=5
 
     steps:
@@ -46,8 +45,6 @@ jobs:
             sleep 2
           done
 
-      
-
       - name: Run frontend tests
         run: |
           docker exec frontend_app npm test -- --watchAll=false --coverage
@@ -56,31 +53,37 @@ jobs:
         run: |
           docker exec backend_app npm test -- --watchAll=false --coverage
 
-
-      - name: Dump logs on failure
+      - name: Show logs on failure
         if: failure()
         run: |
-         docker logs mysql_db || true
-         docker logs backend_app || true
-         docker logs frontend_app || true
+          docker logs mysql_db || true
+          docker logs backend_app || true
+          docker logs frontend_app || true
 
-
-      - name: Shutdown containers
+      - name: Stop containers
         run: docker compose down
 
-  release:
-    needs: ci    
+  deploy:
+    needs: ci
     runs-on: ubuntu-latest
-    if: success()   
+    if: success()
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Create automatic tag and release
-        uses: mathieudutour/github-tag-action@v6.1
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.10
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release_branches: main
-          default_bump: patch
-          tag_prefix: "v"
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          port: 22
+          script: |
+            cd ${{ secrets.EC2_PATH }}
+            git pull
+            docker rm -f frontend_app || true
+            docker build -t my-frontend:latest frontend
+            docker run -d --name frontend_app -p 80:3000 my-frontend:latest
+            docker system prune -f
+
