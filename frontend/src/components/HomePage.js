@@ -99,7 +99,7 @@ const HomePage = () => {
             <h1 style={styles.s4largetextblue}>medicines in</h1>
             <h1 style={styles.s4largetextblue}>just one click</h1>
             <div style={styles.rightAlignedButtonContainer}>
-              <button
+              <button>
                 style={styles.button}
                 onClick={() => navigate('/ordermedicine')}
               >
